@@ -1,53 +1,28 @@
 import { HeroSection } from "@/components/custom/hero-section";
-import qs from "qs";
+import { FeatureSection } from "@/components/custom/feature-section";
+import { getHomePageData } from "@/data/loaders";
 
-const homePageQuery = qs.stringify(
-  {
-    populate: {
-      blocks: {
-        on: {
-          "layout.hero-section": {
-            populate: {
-              image: {
-                fields: ["url", "alternativeText"]
-              },
-              link: {
-                populate: true
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-)
 
-async function getStrapiData() {
-  const baseUrl = "http://localhost:1337";
-  const path = "/api/home-page"
 
-  const url = new URL(baseUrl + path);
-  url.search = homePageQuery;
+const blockComponents = {
+  "layout.hero-section": HeroSection,
+  "layout.features-section": FeatureSection,
+};
 
-  try {
-    const response = await fetch(url.href);
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(error);
-  }
+function blockRenderer(block: any) {
+  const Component = blockComponents[block.__component as keyof typeof blockComponents];
+  return Component ? <Component key={block.id} data={block} /> : null;
 }
 
+
 export default async function Home() {
-  const strapiData = await getStrapiData();
-
-  console.dir(strapiData, { depth: null });
-
+  const strapiData = await getHomePageData();
   const { blocks } = strapiData.data;
+  if (!blocks) return <p>No blocks found</p>;
 
   return (
-    <main className="container mx-auto py-6">
-      <HeroSection data={blocks[0]}/>
+    <main>
+      {blocks.map(blockRenderer)}
     </main>
   );
 }
